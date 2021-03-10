@@ -10,25 +10,6 @@ class Individ;
 int indici_veciniI[]={-1,-1,-1, 0,0, 1,1,1};
 int indici_veciniJ[]={-1, 0, 1,-1,1,-1,0,1};
 
-char randTip(){
-    int tip = rand()%2;
-    char specie;
-    if(tip==0){
-        specie = 'o';
-    }else{
-        specie = '+';
-    }
-    return specie;
-}
-char tabela_temp[20][70];
-
-void GenerareTabela();
-int verifIndici(int x, int y);
-double getEnergieDisp(int i, int j);
-int getVeciniLiberi(int i, int j);
-void actualizareAportEnergetic();
-void actualizareNasteri(int i, int j, Individ &x);
-
 class Individ{
     int m_x,m_y;
     char m_specie;
@@ -107,22 +88,39 @@ public:
 
 };
 class Tabela{
-    friend class Individ;
-    friend int verifIndici(int x,int y);
-    friend double getEnergieDisp(int i, int j);
-    friend void actualizareAportEnergetic();
-    friend void actualizareIndivizi();
-    friend void actualizareNasteri();
-    friend void AfisareTabela();
     Individ tabela[20][70];
-    friend void GenerareTabela();
+    friend class Individ;
+    char tabela_temp[20][70];
+    void GenerareTabela();
+    double getEnergieDisp(int i, int j);
+    void actualizareAportEnergetic();
+    void actualizareIndivizi();
+    void actualizareNasteri();
+    void AfisareTabela();
+    void ResetareTabelaTemp();
+    int getVeciniLiberi(int i, int j);
+    char randTip(); // aceasta functie imi returneaza random una din cele 2 specii
+    int verifIndici(int x, int y);
+public:
+    void Init(){// initializarea tabelei
+            GenerareTabela();
+            AfisareTabela();
+    }
+    void Frame(){// un pas in loop-ul programului
+        actualizareAportEnergetic();
+        actualizareIndivizi();
+        actualizareNasteri();
+        ResetareTabelaTemp();
+        system("cls");
+        AfisareTabela();
+    }
 }T;
 void Individ::hraneste(){
-    m_energie += getEnergieDisp(m_x,m_y)/(abs(V_MAX/2-m_varsta)/4.0+25);
+    m_energie += T.getEnergieDisp(m_x,m_y)/(abs(V_MAX/2-m_varsta)/4.0+25);
 }
 void Individ::ataca(){
     for(int k=0;k<8;k++){
-        if(verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==-1 && T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getTip()!=m_specie){
+        if(T.verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==-1 && T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getTip()!=m_specie){
             double e=T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getEnergie();
             if(e<m_energie){
                 T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].die();
@@ -138,7 +136,7 @@ void Individ::inmulteste(){
     int J[8];   //vectorii retin indicii pozitiiolr libere unde se pot naste indivizi
     int n=0;
     for(int k=0;k<8;k++){
-        if(verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==1 && tabela_temp[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]]=='_'){
+        if(T.verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==1 && T.tabela_temp[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]]=='_'){
             I[n]=m_x+indici_veciniI[k];
             J[n]=m_y+indici_veciniJ[k];
             n++;
@@ -148,11 +146,11 @@ void Individ::inmulteste(){
         int x = rand();
         if(x%4==0){
                 //cout<<(1+(int)(abs(V_MAX/2-m_varsta)/(m_energie+25)))<<" ";
+                // aici trebuie sa mai fac formula pentru nasteri care sa includa V_MAX/2 dar pana acuma nu mi-a placut ce formule am creeat
             if(m_energie>CostEnergie+10){
                 m_energie-=CostEnergie;
-                tabela_temp[I[i]][J[i]] = m_specie;
+                T.tabela_temp[I[i]][J[i]] = m_specie;
             }
-            // aici trebuie sa mai fac formula pentru nasteri
         }
     }
 }
@@ -164,25 +162,41 @@ void Individ::moare(){
 }
 void Individ::imbatraneste(){
     m_varsta += 1;
-    m_energie -= 1; // trebuie vazut daca 1 e o valoare buna
+    m_energie -= 1;
     if(m_varsta>=V_MAX || m_energie<=0){
         moare();
     }
 }
-
 // aici se termina functiile din clasa Individ
 
-int verifIndici(int x,int y){
+char Tabela::randTip(){ // aceasta funtie imi returneaza random una din cele 2 specii
+    int tip = rand()%2;
+    char specie;
+    if(tip==0){
+        specie = 'o';
+    }else{
+        specie = '+';
+    }
+    return specie;
+}
+void Tabela::ResetareTabelaTemp(){
+    for(int i=0;i<20;i++){
+        for(int j=0;j<70;j++){
+            tabela_temp[i][j]='_';
+        }
+
+    }
+}
+int Tabela::verifIndici(int x,int y){
     if(x<0 || x>=20 || y<0 || y>=70){
         return 0; // inseamna pozitie in afara tabelei
     }
-    else if(T.tabela[x][y].esteViu()){
+    else if(tabela[x][y].esteViu()){
         return -1; // inseamna ca pozitia e ocupata de un individ
     }
     else return 1; // inseamna ca pozitia e libara si valida
 }
-
-int getVeciniLiberi(int i, int j){
+int Tabela::getVeciniLiberi(int i, int j){
     int rez=0;
     for(int k=0;k<8;k++){
         if(verifIndici(i+indici_veciniI[k],j+indici_veciniJ[k])==1){
@@ -191,64 +205,55 @@ int getVeciniLiberi(int i, int j){
     }
     return rez;
 }
-double getEnergieDisp(int i, int j){
+double Tabela::getEnergieDisp(int i, int j){
         double rez=0.0;
         for(int k=0;k<8;k++){
             if(verifIndici(i+indici_veciniI[k],j+indici_veciniJ[k])==1){
-                rez+=T.tabela[i+indici_veciniI[k]][j+indici_veciniJ[k]].getEnergie();
+                rez+=tabela[i+indici_veciniI[k]][j+indici_veciniJ[k]].getEnergie();
             }
         }
         return rez;
 }
-void actualizareAportEnergetic(){
+void Tabela::actualizareAportEnergetic(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
             int rez=getVeciniLiberi(i,j);
-            if(verifIndici(i,j)==1) T.tabela[i][j].setEnergie(rez);
+            if(verifIndici(i,j)==1) tabela[i][j].setEnergie(rez);
         }
     }
 }
-void actualizareIndivizi(){
+void Tabela::actualizareIndivizi(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
-            T.tabela[i][j].actualizeaza();
+            tabela[i][j].actualizeaza();
         }
     }
 }
-void actualizareNasteri(){
+void Tabela::actualizareNasteri(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
             if(tabela_temp[i][j]=='+'){
                 Individ nou(i,j,'+');
-                T.tabela[i][j] = nou;
+                tabela[i][j] = nou;
             }
             else if(tabela_temp[i][j]=='o'){
                 Individ nou(i,j,'o');
-                T.tabela[i][j] = nou;
+                tabela[i][j] = nou;
             }
         }
     }
 }
-void ResetareTabelaTemp(){
+void Tabela::AfisareTabela(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
-            tabela_temp[i][j]='_';
-        }
-
-    }
-
-}
-void AfisareTabela(){
-    for(int i=0;i<20;i++){
-        for(int j=0;j<70;j++){
-            cout<<T.tabela[i][j].getTip()<<" "; //aici pot afisa diverse despre tabela si indivizi
+            cout<<tabela[i][j].getTip()<<" "; //aici pot afisa diverse despre tabela si indivizi
         }
         cout<<endl;
     }
     cout<<endl;
 
 }
-void GenerareTabela(){// de generat tabela aleator... deocamdata sunt numai niste pozitii fixe
+void Tabela::GenerareTabela(){
     ResetareTabelaTemp();
     int n = 0;
     int X[1400];
@@ -267,32 +272,20 @@ void GenerareTabela(){// de generat tabela aleator... deocamdata sunt numai nist
     }
     for(int i=0;i<n;i++){
         Individ init(X[i],Y[i],S[i]);
-        T.tabela[X[i]][Y[i]]=init;
+        tabela[X[i]][Y[i]]=init;
     }
     actualizareAportEnergetic();
-//    actualizareIndivizi();
-//    actualizareNasteri();
-//    ResetareTabelaTemp();
 }
+//  aici se termina functiile din clasa Tabela
+
 char ch;
-void Frame(){
-    srand (time(NULL));
-    ch = _getch();
-    actualizareAportEnergetic();
-    actualizareIndivizi();
-    actualizareNasteri();
-    ResetareTabelaTemp();
-    system("cls");
-    AfisareTabela();
-}
-
 int main(){
-    GenerareTabela();
-    AfisareTabela();
-
-while(ch!='a'){
-    Frame();
-}
-
+    srand (time(NULL));
+    T.Init();
+    while(ch!='a'){ // la fiecare pas trebuie apasat pe orice tasta cu exceptia lui "a" ca jocul sa continue. Daca se apasa "a", jocul se termina.
+        ch = _getch();
+        T.Frame();
+    }
+    return 0;
 }
 
