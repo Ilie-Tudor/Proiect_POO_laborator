@@ -22,6 +22,7 @@ char randTip(){
 }
 char tabela_temp[20][70];
 
+void GenerareTabela();
 int verifIndici(int x, int y);
 double getEnergieDisp(int i, int j);
 int getVeciniLiberi(int i, int j);
@@ -104,17 +105,27 @@ public:
         m_energie=x;
     }
 
-}tabela[20][70];
+};
+class Tabela{
+    friend class Individ;
+    friend int verifIndici(int x,int y);
+    friend double getEnergieDisp(int i, int j);
+    friend void actualizareAportEnergetic();
+    friend void actualizareIndivizi();
+    friend void actualizareNasteri();
+    friend void AfisareTabela();
+    Individ tabela[20][70];
+    friend void GenerareTabela();
+}T;
 void Individ::hraneste(){
-    int eng = 0; // de completat
-    m_energie += getEnergieDisp(m_x,m_y)/(abs(V_MAX/2-m_varsta)/4.0+10); //todo formula care sa includa si varsta;
+    m_energie += getEnergieDisp(m_x,m_y)/(abs(V_MAX/2-m_varsta)/4.0+25);
 }
 void Individ::ataca(){
     for(int k=0;k<8;k++){
-        if(verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==-1 && tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getTip()!=m_specie){
-            double e=tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getEnergie();
-            if(e<=m_energie+10){
-                tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].die();
+        if(verifIndici(m_x+indici_veciniI[k],m_y+indici_veciniJ[k])==-1 && T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getTip()!=m_specie){
+            double e=T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].getEnergie();
+            if(e<m_energie){
+                T.tabela[m_x+indici_veciniI[k]][m_y+indici_veciniJ[k]].die();
                 m_energie-=e;
             }
         }
@@ -122,7 +133,7 @@ void Individ::ataca(){
 
 }
 void Individ::inmulteste(){
-    int CostEnergie=12;
+    int CostEnergie=5;
     int I[8];
     int J[8];   //vectorii retin indicii pozitiiolr libere unde se pot naste indivizi
     int n=0;
@@ -135,7 +146,8 @@ void Individ::inmulteste(){
     }
     for(int i=0;i<n;i++){
         int x = rand();
-        if(x%5==1){
+        if(x%4==0){
+                //cout<<(1+(int)(abs(V_MAX/2-m_varsta)/(m_energie+25)))<<" ";
             if(m_energie>CostEnergie+10){
                 m_energie-=CostEnergie;
                 tabela_temp[I[i]][J[i]] = m_specie;
@@ -164,7 +176,7 @@ int verifIndici(int x,int y){
     if(x<0 || x>=20 || y<0 || y>=70){
         return 0; // inseamna pozitie in afara tabelei
     }
-    else if(tabela[x][y].esteViu()){
+    else if(T.tabela[x][y].esteViu()){
         return -1; // inseamna ca pozitia e ocupata de un individ
     }
     else return 1; // inseamna ca pozitia e libara si valida
@@ -183,7 +195,7 @@ double getEnergieDisp(int i, int j){
         double rez=0.0;
         for(int k=0;k<8;k++){
             if(verifIndici(i+indici_veciniI[k],j+indici_veciniJ[k])==1){
-                rez+=tabela[i+indici_veciniI[k]][j+indici_veciniJ[k]].getEnergie();
+                rez+=T.tabela[i+indici_veciniI[k]][j+indici_veciniJ[k]].getEnergie();
             }
         }
         return rez;
@@ -192,14 +204,14 @@ void actualizareAportEnergetic(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
             int rez=getVeciniLiberi(i,j);
-            if(verifIndici(i,j)==1) tabela[i][j].setEnergie(rez);
+            if(verifIndici(i,j)==1) T.tabela[i][j].setEnergie(rez);
         }
     }
 }
 void actualizareIndivizi(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
-            tabela[i][j].actualizeaza();
+            T.tabela[i][j].actualizeaza();
         }
     }
 }
@@ -208,16 +220,14 @@ void actualizareNasteri(){
         for(int j=0;j<70;j++){
             if(tabela_temp[i][j]=='+'){
                 Individ nou(i,j,'+');
-                tabela[i][j] = nou;
+                T.tabela[i][j] = nou;
             }
             else if(tabela_temp[i][j]=='o'){
                 Individ nou(i,j,'o');
-                tabela[i][j] = nou;
+                T.tabela[i][j] = nou;
             }
         }
-
     }
-
 }
 void ResetareTabelaTemp(){
     for(int i=0;i<20;i++){
@@ -231,7 +241,7 @@ void ResetareTabelaTemp(){
 void AfisareTabela(){
     for(int i=0;i<20;i++){
         for(int j=0;j<70;j++){
-            cout<<tabela[i][j].getTip()<<" "; //aici pot afisa diverse despre tabela si indivizi
+            cout<<T.tabela[i][j].getTip()<<" "; //aici pot afisa diverse despre tabela si indivizi
         }
         cout<<endl;
     }
@@ -240,14 +250,24 @@ void AfisareTabela(){
 }
 void GenerareTabela(){// de generat tabela aleator... deocamdata sunt numai niste pozitii fixe
     ResetareTabelaTemp();
-    int n = 3;
-    int X[] = {5,6,8};
-    int Y[] = {5,5,7};
-    char T[] = {'+','+','o'};
-
+    int n = 0;
+    int X[1400];
+    int Y[1400];
+    char S[1400];
+    for(int i=0;i<20;i++){
+        for(int j=0;j<70;j++){
+            int x = rand()%10;
+            if(x==0){
+                X[n]=i;
+                Y[n]=j;
+                S[n] = randTip();
+                n++;
+            }
+        }
+    }
     for(int i=0;i<n;i++){
-        Individ init(X[i],Y[i],T[i]);
-        tabela[X[i]][Y[i]]=init;
+        Individ init(X[i],Y[i],S[i]);
+        T.tabela[X[i]][Y[i]]=init;
     }
     actualizareAportEnergetic();
 //    actualizareIndivizi();
