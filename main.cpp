@@ -89,22 +89,24 @@ public:
 };
 class Tabela{
     Individ tabela[20][70];
-    friend class Individ;
-    char tabela_temp[20][70];
+    friend class Individ; // am declarat clasa Individ ca fiind prietena pentru Tabela pentru a avea acces la metodele pentru managementul tabelei
+    char tabela_temp[20][70];// tabela temporala este folosita ca nasterile sa fie facute simultan, in acelasi frame al jocului. Altfel, copii se nasc pe rand si pot fi atacati imediat.
     void GenerareTabela();
-    double getEnergieDisp(int i, int j);
+    double getEnergieDisp(int i, int j); // aceasta functie returneaza energia disponibila pentru individ, luand in calcul aportul energetic al pozitiilor adiacente
     void actualizareAportEnergetic();
     void actualizareIndivizi();
-    void actualizareNasteri();
+    void actualizareNasteri(); // se actualizeaza nasterile stocate in tabela temporala
     void AfisareTabela();
     void ResetareTabelaTemp();
-    int getVeciniLiberi(int i, int j);
+    int getVeciniLiberi(int i, int j); // functia returneaza numarul de vecini liberi pe care ii are o pozitie libera, acesta reprezentand aportul energetic
     char randTip(); // aceasta functie imi returneaza random una din cele 2 specii
-    int verifIndici(int x, int y);
+    int verifIndici(int x, int y); // ferifica daca pozitia (x,y) se afla in tabela si este libera sau ocupata
+    bool gameOver();
 public:
     void Init(){// initializarea tabelei
             GenerareTabela();
             AfisareTabela();
+            cout<<"Tineti apasata o tasta oarecare inafara de tasta a ca jocul sa continue \nPentru a termina jocul apasati tasta a";
     }
     void Frame(){// un pas in loop-ul programului
         actualizareAportEnergetic();
@@ -144,9 +146,7 @@ void Individ::inmulteste(){
     }
     for(int i=0;i<n;i++){
         int x = rand();
-        if(x%4==0){
-                //cout<<(1+(int)(abs(V_MAX/2-m_varsta)/(m_energie+25)))<<" ";
-                // aici trebuie sa mai fac formula pentru nasteri care sa includa V_MAX/2 dar pana acuma nu mi-a placut ce formule am creeat
+        if(x%(3+(int)(abs(V_MAX/2-m_varsta)/(m_energie+25)))==0){
             if(m_energie>CostEnergie+10){
                 m_energie-=CostEnergie;
                 T.tabela_temp[I[i]][J[i]] = m_specie;
@@ -275,6 +275,17 @@ void Tabela::GenerareTabela(){
         tabela[X[i]][Y[i]]=init;
     }
     actualizareAportEnergetic();
+}
+
+bool Tabela::gameOver(){ //aici am definit functia care verifica daca mai exista indivizi pe tabela, dar nu am folosit-o pentru ca am ales valorile si formulele in asa fel incat acest lucru sa nu se intample
+    for(int i=0;i<20;i++){
+        for(int j=0;j<70;j++){
+            if(tabela[i][j].esteViu()==1){
+                return false;
+            }
+        }
+    }
+    return true;
 }
 //  aici se termina functiile din clasa Tabela
 
