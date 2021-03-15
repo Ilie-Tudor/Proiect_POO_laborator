@@ -4,7 +4,8 @@
 #include <time.h>
 using namespace std;
 
-#define V_MAX 100
+
+const int V_MAX = 100;
 class Individ;
 
 int indici_veciniI[]={-1,-1,-1, 0,0, 1,1,1};
@@ -85,12 +86,11 @@ public:
     void setEnergie(double x){
         m_energie=x;
     }
-
 };
 class Tabela{
     Individ tabela[20][70];
     friend class Individ; // am declarat clasa Individ ca fiind prietena pentru Tabela pentru a avea acces la metodele pentru managementul tabelei
-    char tabela_temp[20][70];// tabela temporala este folosita ca nasterile sa fie facute simultan, in acelasi frame al jocului. Altfel, copii se nasc pe rand si pot fi atacati imediat.
+    char tabela_temp[20][70]; // tabela temporala este folosita ca nasterile sa fie facute simultan, in acelasi frame al jocului. Altfel, copii se nasc pe rand si pot fi atacati imediat.
     void GenerareTabela();
     double getEnergieDisp(int i, int j); // aceasta functie returneaza energia disponibila pentru individ, luand in calcul aportul energetic al pozitiilor adiacente
     void actualizareAportEnergetic();
@@ -107,6 +107,16 @@ public:
             GenerareTabela();
             AfisareTabela();
             cout<<"Tineti apasata o tasta oarecare inafara de tasta a ca jocul sa continue \nPentru a termina jocul apasati tasta a";
+    }
+    void ClientInit(int vi[], int vj[], char vs[], int n){
+
+        for(int k=0; k<n; k++){
+            Individ nou(vi[k],vj[k],vs[k]);
+            tabela[vi[k]][vj[k]] = nou;
+        }
+        AfisareTabela();
+        cout<<"Tineti apasata o tasta oarecare inafara de tasta a ca jocul sa continue \nPentru a termina jocul apasati tasta a";
+
     }
     void Frame(){// un pas in loop-ul programului
         actualizareAportEnergetic();
@@ -292,10 +302,34 @@ bool Tabela::gameOver(){ //aici am definit functia care verifica daca mai exista
 char ch;
 int main(){
     srand (time(NULL));
-    T.Init();
-    while(ch!='a'){ // la fiecare pas trebuie apasat pe orice tasta cu exceptia lui "a" ca jocul sa continue. Daca se apasa "a", jocul se termina.
-        ch = _getch();
-        T.Frame();
+
+    int mode;
+    cout<<"Selectati modul in care sa se initializeze tabela:"<<"\n"<<"1 = Tabela generata aleatoriu\n2 = Tabela generata de user\n";
+    cin>>mode;
+    if(mode==1){
+        T.Init();
+        while(ch!='a'){ // la fiecare pas trebuie apasat pe orice tasta cu exceptia lui "a" ca jocul sa continue. Daca se apasa "a", jocul se termina.
+            ch = _getch();
+            T.Frame();
+        }
+    }
+    else if(mode==2){
+        cout<< "Cati indivizi?\n";
+        int n;
+        cin>>n;
+        cout<< "Afisati tuplurile pentru indivizi\n";
+        int I[n];
+        int J[n];
+        char SP[n];
+        for(int i=0;i<n;i++){
+            cin>>I[i]>>J[i]>>SP[i];
+        }
+        T.ClientInit(I,J,SP,n);
+        while(ch!='a'){ // la fiecare pas trebuie apasat pe orice tasta cu exceptia lui "a" ca jocul sa continue. Daca se apasa "a", jocul se termina.
+            ch = _getch();
+            T.Frame();
+        }
+
     }
     return 0;
 }
